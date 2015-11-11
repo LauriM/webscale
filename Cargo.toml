@@ -5,3 +5,4 @@ authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>"]
 
 [dependencies]
 irc = "0.9.1"
+curl = "0.2.13"
