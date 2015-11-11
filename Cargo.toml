@@ -1,0 +1,7 @@
+[package]
+name = "webscale"
+version = "0.1.0"
+authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>"]
+
+[dependencies]
+irsc = "0.2.0"
