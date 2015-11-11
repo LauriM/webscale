@@ -1,11 +1,18 @@
 extern crate irc;
-extern crate curl;
+extern crate hyper;
+extern crate xml;
 
 use irc::client::prelude::*;
-use curl::http;
+
+use std::io::Read;
+
+use hyper::Client;
+use hyper::header::Connection;
 
 fn main() {
 	println!("Webscale scaling up...");
+
+	let mut client = Client::new();
 
 	let server = IrcServer::new("config.json").unwrap();
 	server.identify().unwrap();
@@ -19,17 +26,10 @@ fn main() {
 					{
 						println!("Url received: {}", x);
 
-						let resp = http::handle().get(x).exec().unwrap();
+						let mut res = client.get(x).header(Connection::close()).send().unwrap();
 
-						//TODO: bug, failing on redirections
-						if(resp.get_code() == 200)
-						{
-							println!("Content: {:?}", resp.get_body());
-						}
-						else
-						{
-							println!("invalid url");
-						}
+						let mut body = String::new();
+						res.read_to_string(&mut body).unwrap();
 					}
 				}
 
