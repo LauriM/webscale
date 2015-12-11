@@ -5,5 +5,5 @@ authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>"]
 
 [dependencies]
 irc = "0.9.1"
-hyper = "0.6.15"
 xml-rs = "0.2.2"
+hyper = "0.7.0"
