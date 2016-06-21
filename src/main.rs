@@ -50,7 +50,7 @@ fn main() {
                     
                     if title_pattern.is_match(&body) {
                         let title = title_pattern.captures(&body).unwrap().at(1).unwrap();
-                        server.send_privmsg(&message.args[0], &vec!["[", &user, "] ", title].join(""));
+                        server.send_privmsg(&message.args[0], &vec!["Title: ", title].join(""));
                     }
                 }
             }
