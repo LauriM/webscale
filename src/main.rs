@@ -1,22 +1,45 @@
-extern crate irc;
 extern crate hyper;
+extern crate irc;
 extern crate xml;
 extern crate regex;
+extern crate config;
 
+use std::path::Path;
 use irc::client::prelude::*;
-
 use std::io::Read;
 use regex::Regex;
 use hyper::Client;
 use hyper::header::Connection;
+use config::reader;
+use config::types::Value;
+use config::types::ScalarValue;
 
 fn main() {
 	println!("Webscale scaling up...");
+
+	println!("Reading configs...");
+
+	let confFile = reader::from_file(Path::new("webscale.conf")).unwrap();
+
+	/*
+	if !confFile.is_ok()
+	{
+		println!("webscale.conf missing! Please check the package for example configuration.");
+	}
+	*/
+
+//	let configuration = confFile.unwrap();
+
+	let nickname = confFile.lookup_str("webscale.nickname");
+	let altnick = confFile.lookup_str("webscale.altnick");
+	let server = confFile.lookup_str("webscale.server");
+	let channel = confFile.lookup_str("webscale.channel");
+
     let config = Config {
-        nickname: Some(format!("webscale")),
-        alt_nicks: Some(vec![format!("webscale0x"), format!("webtech0")]),
-        server: Some(format!("irc.freenode.net")),
-        channels: Some(vec![format!("#0x")]),
+        nickname: Some(String::from(nickname.unwrap())),
+        alt_nicks: Some(vec![ String::from(altnick.unwrap()), format!("wartech0r") ]),
+        server: Some(String::from(server.unwrap())),
+        channels: Some(vec![ String::from(channel.unwrap()) ]),
         .. Default::default()
     };
 
@@ -42,6 +65,7 @@ fn main() {
                     .to_string();
 
                 if url_pattern.is_match(&msg) {
+					// Crash probably somewhere around here, not handling error correctly
                     let url = url_pattern.captures(&msg).unwrap().at(0).unwrap();
 
                     let mut res = client.get(url).send().unwrap();
