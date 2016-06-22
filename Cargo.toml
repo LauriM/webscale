@@ -6,6 +6,7 @@ authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>"]
 [dependencies]
 irc = "0.9.1"
 xml-rs = "0.2.2"
-hyper = "0.7.0"
+hyper = "0.9.9"
 regex = "0.1.47"
 config = "~0.1.0"
+url = "1.1.1"
