@@ -1,43 +1,25 @@
 extern crate hyper;
 extern crate irc;
-extern crate xml;
-extern crate regex;
 extern crate config;
-extern crate url;
 
-use std::path::Path;
 use irc::client::prelude::*;
-use std::io::Read;
-use regex::Regex;
-use hyper::Client;
-use hyper::header::Connection;
+use std::path::Path;
 use config::reader;
-use config::types::Value;
-use config::types::ScalarValue;
-use hyper::Url;
-use hyper::client::Request;
-use url::ParseError;
+use hyper::Client;
 
 fn main() {
 	println!("Webscale scaling up...");
 
 	println!("Reading configs...");
 
-	let confFile = reader::from_file(Path::new("webscale.conf")).unwrap();
+	// Configuration
+	//TODO: Configuration could be much more flexible
+	let conf_file = reader::from_file(Path::new("webscale.conf")).unwrap();
 
-	/*
-	if !confFile.is_ok()
-	{
-		println!("webscale.conf missing! Please check the package for example configuration.");
-	}
-	*/
-
-//	let configuration = confFile.unwrap();
-
-	let nickname = confFile.lookup_str("webscale.nickname");
-	let altnick = confFile.lookup_str("webscale.altnick");
-	let server = confFile.lookup_str("webscale.server");
-	let channel = confFile.lookup_str("webscale.channel");
+	let nickname = conf_file.lookup_str("webscale.nickname");
+	let altnick = conf_file.lookup_str("webscale.altnick");
+	let server = conf_file.lookup_str("webscale.server");
+	let channel = conf_file.lookup_str("webscale.channel");
 
     let config = Config {
         nickname: Some(String::from(nickname.unwrap())),
@@ -49,46 +31,26 @@ fn main() {
 
     // Setup IRC server.
 	let server = IrcServer::from_config(config).unwrap();
-	server.identify().unwrap();
+	server.identify();
 
     // Setup HTTP client.
     let client = Client::new();
 
-    // Common regex patterns.
-    let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
-    let title_pattern = Regex::new(r"(?i)<title>(.+)</title>").unwrap();
-
 	for message in server.iter() {
-        let message = message.unwrap();
-        if &message.command[..] == "PRIVMSG" {
-            if let (Some(prefix), Some(msg)) = (message.prefix, message.suffix) {
-                let user = prefix.split("!")
-                    .collect::<Vec<&str>>()
-                    .first()
-                    .unwrap()
-                    .to_string();
+		let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
 
-                if url_pattern.is_match(&msg) {
-					// Crash probably somewhere around here, not handling error correctly
-                    let url = url_pattern.captures(&msg).unwrap().at(0).unwrap();
+		print!("{}", message);
 
-					let mut res = client.get(url).send().unwrap();
-					assert_eq!(res.status, hyper::Ok);
+		match message.command {
+			Command::PRIVMSG(ref target, ref msg) => {
 
-					// check that its ok
-					if res.status == hyper::Ok {
-
-						let mut body = String::new();
-						res.read_to_string(&mut body).unwrap();
-
-						if title_pattern.is_match(&body) {
-							let title = title_pattern.captures(&body).unwrap().at(1).unwrap();
-							server.send_privmsg(&message.args[0], &vec!["Title: ", title].join(""));
-						}
-					}
-
+                if(msg.contains("!ping")){
+                    server.send_privmsg(target, "pong");
                 }
-            }
-        }
+
+			},
+			_ => (),
+		}
+
 	}
 }
