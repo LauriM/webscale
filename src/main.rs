@@ -2,12 +2,32 @@ extern crate hyper;
 extern crate irc;
 extern crate config;
 extern crate regex;
+extern crate rquery;
 
+use std::io::Read;
 use irc::client::prelude::*;
 use std::path::Path;
 use config::reader;
 use hyper::Client;
 use regex::Regex;
+use std::result;
+
+fn get_title_for_url(url :&str) -> Result<String, String> {
+    let client = Client::new();
+
+    let mut body = match client.get(url).send() {
+        Ok(mut res) => {
+            let mut body = String::new();
+            res.read_to_string(&mut body).unwrap();
+
+            body
+        },
+        Err(err) => return Err(err.to_string()),
+    };
+
+    //TODO: Body has html, we need the title
+    Ok(body)
+}
 
 fn main() {
 	println!("Webscale scaling up...");
@@ -35,9 +55,6 @@ fn main() {
 	let server = IrcServer::from_config(config).unwrap();
 	server.identify();
 
-    // Setup HTTP client.
-    let client = Client::new();
-
     // Used to catch the url's from incoming messages
     let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
 
@@ -49,7 +66,7 @@ fn main() {
 		match message.command {
 			Command::PRIVMSG(ref target, ref msg) => {
 
-                if(msg.contains("!ping")) {
+                if msg.contains("!ping") {
                     server.send_privmsg(target, "pong");
                 }
 
@@ -57,6 +74,13 @@ fn main() {
                     let url = url_pattern.captures(&msg).unwrap().at(0).unwrap();
 
                     println!("We should fetch url: {}", url);
+
+                    match get_title_for_url(url) {
+                        Ok(title) => {
+                            println!("We got title: {}", title);
+                        } ,
+                        Err(err) => println!("Could not get title for urlg {}", err),
+                    };
                 }
 
 			},
