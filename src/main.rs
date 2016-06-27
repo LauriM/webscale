@@ -37,8 +37,7 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
         None => return Err(String::from("Title missing")),
     };
 
-    //TODO: some funny "</" characthers left sometimes in the title
-    let title: String = body.chars().skip(start_pos).take(end_pos - start_pos).collect();
+    let title: String = body[start_pos..end_pos].to_owned();
 
     Ok(title)
 }
