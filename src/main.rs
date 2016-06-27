@@ -18,7 +18,7 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
     let mut body = match client.get(url).send() {
         Ok(mut res) => {
             let mut body = String::new();
-            res.read_to_string(&mut body).unwrap();
+            res.read_to_string(&mut body);
 
             body
         },
