@@ -25,8 +25,22 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
         Err(err) => return Err(err.to_string()),
     };
 
-    //TODO: Body has html, we need the title
-    Ok(body)
+    // Finding the title from the body
+    
+    let start_pos = match body.find("<title>") {
+        Some(res) => res + 7,
+        None => return Err(String::from("Title missing")),
+    };
+
+    let end_pos = match body.find("</title>") {
+        Some(res) => res,
+        None => return Err(String::from("Title missing")),
+    };
+
+    //TODO: some funny "</" characthers left sometimes in the title
+    let title: String = body.chars().skip(start_pos).take(end_pos - start_pos).collect();
+
+    Ok(title)
 }
 
 fn main() {
@@ -77,9 +91,9 @@ fn main() {
 
                     match get_title_for_url(url) {
                         Ok(title) => {
-                            println!("We got title: {}", title);
+                            server.send_privmsg(target, &vec!["Title: ", &title].join(""));
                         } ,
-                        Err(err) => println!("Could not get title for urlg {}", err),
+                        Err(err) => println!("Title fetch failed: {}", err),
                     };
                 }
 
