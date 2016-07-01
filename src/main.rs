@@ -43,30 +43,11 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
 }
 
 fn main() {
-	println!("Webscale scaling up...");
-
-	println!("Reading configs...");
-
-	// Configuration
-	//TODO: Configuration could be much more flexible
-	let conf_file = reader::from_file(Path::new("webscale.conf")).unwrap();
-
-	let nickname = conf_file.lookup_str("webscale.nickname");
-	let altnick = conf_file.lookup_str("webscale.altnick");
-	let server = conf_file.lookup_str("webscale.server");
-	let channel = conf_file.lookup_str("webscale.channel");
-
-    let config = Config {
-        nickname: Some(String::from(nickname.unwrap())),
-        alt_nicks: Some(vec![ String::from(altnick.unwrap()), format!("wartech0r") ]),
-        server: Some(String::from(server.unwrap())),
-        channels: Some(vec![ String::from(channel.unwrap()) ]),
-        .. Default::default()
-    };
+	println!("Webscale is scaling up...");
 
     // Setup IRC server.
-	let server = IrcServer::from_config(config).unwrap();
-	server.identify();
+	let server = IrcServer::new("webscale.json").unwrap();
+	server.identify().unwrap();
 
     // Used to catch the url's from incoming messages
     let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
