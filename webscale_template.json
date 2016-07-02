@@ -17,6 +17,6 @@
 	"ping_timeout": 10,
 	"options": {
 		"key": "value",
-		"note": "These are not yet used",
+		"note": "These are not yet used"
 	}
 }
