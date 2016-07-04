@@ -56,13 +56,13 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
 trait MessageHandler {
 
     // Get an message, if doing something with it, send reply back (reply goes always back to 
-    fn handle_message(&self, message :&str) -> Option<String>;
+    fn handle_message(&mut self, message :&str) -> Option<String>;
 }
 
 struct TitleScrapper;
 
 impl MessageHandler for TitleScrapper {
-    fn handle_message(&self, message :&str) -> Option<String> {
+    fn handle_message(&mut self, message :&str) -> Option<String> {
 
         // Move to the struct or something
         let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
@@ -84,6 +84,29 @@ impl MessageHandler for TitleScrapper {
     }
 }
 
+// Dummy example message handler
+struct Pinger {
+    // How many pongs are we going to give out 
+    // Limited amount of pongs per boot
+    count: i8
+}
+
+impl MessageHandler for Pinger {
+    fn handle_message(&mut self, message :&str) -> Option<String> {
+        if self.count <= 0 {
+            return None;
+        }
+
+        if message.contains("!ping") {
+            self.count = self.count - 1;
+
+            return Some(String::from("pong"));
+        }
+
+        None
+    }
+}
+
 fn main() {
 	println!("Webscale is scaling up...");
 
@@ -91,9 +114,12 @@ fn main() {
 	let server = IrcServer::new("webscale.json").unwrap();
 	server.identify().unwrap();
 
-    // Used to catch the url's from incoming messages
+    // Contains all the different message handlers
+    let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
-    let scrapper = TitleScrapper { };
+    // Add all different handlers into use
+    message_handlers.push(Box::new(TitleScrapper {}));
+    message_handlers.push(Box::new(Pinger {count : 5}));
 
 	for message in server.iter() {
 		let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
@@ -103,21 +129,18 @@ fn main() {
 		match message.command {
 			Command::PRIVMSG(ref target, ref msg) => {
 
-                match scrapper.handle_message(msg) {
-                    Some(msg) => {
-                        // got reply, send it to the target
-                        server.send_privmsg(target, &msg);
-                    },
-                    None => (),
-                }
-
-
-                if msg.contains("!ping") {
-                    server.send_privmsg(target, "pong");
+                for handler in message_handlers.iter_mut() {
+                    match handler.handle_message(msg) {
+                        Some(msg) => {
+                            server.send_privmsg(target, &msg);
+                        },
+                        None => (),
+                    }
                 }
 
 			},
 			_ => (),
+
 		}
 
 	}
