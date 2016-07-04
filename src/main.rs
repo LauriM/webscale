@@ -42,6 +42,48 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
     Ok(title)
 }
 
+
+// MessageHandler is a simple abstraction for different features
+//
+// Right now the handling is limited string input and output.
+// To not react to the message received, return None.
+//
+// If message is received, the reply is send to the same source where it was originating
+//
+// All messages are currently send to all handlers.
+// 
+// TODO: Information of the source should be passed to the handler
+trait MessageHandler {
+
+    // Get an message, if doing something with it, send reply back (reply goes always back to 
+    fn handle_message(&self, message :&str) -> Option<String>;
+}
+
+struct TitleScrapper;
+
+impl MessageHandler for TitleScrapper {
+    fn handle_message(&self, message :&str) -> Option<String> {
+
+        // Move to the struct or something
+        let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
+
+        if url_pattern.is_match(&message) {
+            let url = url_pattern.captures(&message).unwrap().at(0).unwrap();
+
+            println!("We should fetch url: {}", url);
+
+            match get_title_for_url(url) {
+                Ok(title) => {
+                    return Some(vec!["Title: ", &title].join(""));
+                } ,
+                Err(err) => println!("Title fetch failed: {}", err),
+            };
+        }
+
+        None
+    }
+}
+
 fn main() {
 	println!("Webscale is scaling up...");
 
@@ -50,7 +92,8 @@ fn main() {
 	server.identify().unwrap();
 
     // Used to catch the url's from incoming messages
-    let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
+
+    let scrapper = TitleScrapper { };
 
 	for message in server.iter() {
 		let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
@@ -60,21 +103,17 @@ fn main() {
 		match message.command {
 			Command::PRIVMSG(ref target, ref msg) => {
 
-                if msg.contains("!ping") {
-                    server.send_privmsg(target, "pong");
+                match scrapper.handle_message(msg) {
+                    Some(msg) => {
+                        // got reply, send it to the target
+                        server.send_privmsg(target, &msg);
+                    },
+                    None => (),
                 }
 
-                if url_pattern.is_match(&msg) {
-                    let url = url_pattern.captures(&msg).unwrap().at(0).unwrap();
 
-                    println!("We should fetch url: {}", url);
-
-                    match get_title_for_url(url) {
-                        Ok(title) => {
-                            server.send_privmsg(target, &vec!["Title: ", &title].join(""));
-                        } ,
-                        Err(err) => println!("Title fetch failed: {}", err),
-                    };
+                if msg.contains("!ping") {
+                    server.send_privmsg(target, "pong");
                 }
 
 			},
