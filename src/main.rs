@@ -37,7 +37,14 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
         None => return Err(String::from("Title missing")),
     };
 
-    let title: String = body[start_pos..end_pos].to_owned();
+    let mut title: String = body[start_pos..end_pos].to_owned();
+
+    // Trim whitespace out of titles because webdevs are just amazing...
+    title = match title.trim().parse()
+    {
+        Ok(title) => title,
+        Err(_) => return Err(String::from("failed to trim the title!")),
+    };
 
     Ok(title)
 }
