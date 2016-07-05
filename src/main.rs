@@ -11,9 +11,11 @@ use config::reader;
 use hyper::Client;
 use regex::Regex;
 use std::result;
+use std::time::Duration;
 
 fn get_title_for_url(url :&str) -> Result<String, String> {
-    let client = Client::new();
+    let mut client = Client::new();
+    client.set_read_timeout(Some(Duration::new(5, 0)));
 
     let mut body = match client.get(url).send() {
         Ok(mut res) => {
