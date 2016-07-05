@@ -20,7 +20,9 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
     let mut body = match client.get(url).send() {
         Ok(mut res) => {
             let mut body = String::new();
-            res.read_to_string(&mut body);
+
+            // 15k is a nice round number to keep the trolls away
+            let mut handle = res.take(15000).read_to_string(&mut body);
 
             body
         },
