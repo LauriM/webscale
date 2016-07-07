@@ -1,16 +1,11 @@
 extern crate hyper;
 extern crate irc;
-extern crate config;
 extern crate regex;
-extern crate rquery;
 
 use std::io::Read;
 use irc::client::prelude::*;
-use std::path::Path;
-use config::reader;
 use hyper::Client;
 use regex::Regex;
-use std::result;
 use std::time::Duration;
 
 fn get_title_for_url(url :&str) -> Result<String, String> {
@@ -22,7 +17,7 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
             let mut body = String::new();
 
             // 15k is a nice round number to keep the trolls away
-            let mut handle = res.take(15000).read_to_string(&mut body);
+            res.take(15000).read_to_string(&mut body);
 
             body
         },
