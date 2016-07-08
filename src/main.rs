@@ -114,11 +114,11 @@ impl MessageHandler for Pinger {
 }
 
 fn main() {
-	println!("Webscale is scaling up...");
+    println!("Webscale is scaling up...");
 
     // Setup IRC server.
-	let server = IrcServer::new("webscale.json").unwrap();
-	server.identify().unwrap();
+    let server = IrcServer::new("webscale.json").unwrap();
+    server.identify().unwrap();
 
     // Contains all the different message handlers
     let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
@@ -127,13 +127,13 @@ fn main() {
     message_handlers.push(Box::new(TitleScrapper {}));
     message_handlers.push(Box::new(Pinger {count : 5}));
 
-	for message in server.iter() {
-		let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
+    for message in server.iter() {
+        let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
 
-		print!("{}", message);
+        print!("{}", message);
 
-		match message.command {
-			Command::PRIVMSG(ref target, ref msg) => {
+        match message.command {
+            Command::PRIVMSG(ref target, ref msg) => {
 
                 for handler in message_handlers.iter_mut() {
                     match handler.handle_message(msg) {
@@ -144,12 +144,11 @@ fn main() {
                     }
                 }
 
-			},
-			_ => (),
+            },
+            _ => (),
+        }
 
-		}
-
-	}
+    }
 
     println!("Lost connection, shutting down...");
 }
