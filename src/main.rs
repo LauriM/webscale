@@ -45,6 +45,12 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
         Err(_) => return Err(String::from("failed to trim the title!")),
     };
 
+    title = title.replace("&quot;", "\"")
+        .replace("&amp;", "&")
+        .replace("&x27;", "\\")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">");
+
     Ok(title)
 }
 
