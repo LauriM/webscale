@@ -8,6 +8,5 @@
 while [ 1 ]
 do
 	git pull
-	cargo clean
 	cargo run --release
 done
