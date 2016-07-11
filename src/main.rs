@@ -50,6 +50,7 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
         .replace("&x27;", "\\")
         .replace("&lt;", "<")
         .replace("&#39;", "'")
+        .replace("&#039;", "'")
         .replace("&gt;", ">");
 
     Ok(title)
