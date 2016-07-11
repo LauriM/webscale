@@ -127,7 +127,7 @@ struct Updater {
 impl MessageHandler for Updater {
     fn handle_message(&mut self, message :&str) -> Option<String> {
         if message.contains("!rebuild") {
-		let cmd = std::process::Command::new("/home/carefish/k00pa/webscale/updater.sh").spawn().expect("did not work");
+                panic!("herp");		
 		return Some(String::from("May day may day! Taking fire! Whiskey Tango Foxtrot do you read me? MAY DAY MAY DAY"));
         }
 
@@ -148,7 +148,7 @@ fn main() {
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
     message_handlers.push(Box::new(Pinger {count : 5}));
-	message_handlers.push(Box::new(Updater {}));
+    message_handlers.push(Box::new(Updater {  }));
 
     for message in server.iter() {
         let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
