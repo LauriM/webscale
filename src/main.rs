@@ -127,8 +127,8 @@ struct Updater {
 impl MessageHandler for Updater {
     fn handle_message(&mut self, message :&str) -> Option<String> {
         if message.contains("!rebuild") {
-                panic!("herp");		
-		return Some(String::from("May day may day! Taking fire! Whiskey Tango Foxtrot do you read me? MAY DAY MAY DAY"));
+            panic!("herp");
+            return Some(String::from("May day may day! Taking fire! Whiskey Tango Foxtrot do you read me? MAY DAY MAY DAY"));
         }
 
         None
