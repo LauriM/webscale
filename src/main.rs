@@ -121,6 +121,58 @@ impl MessageHandler for Pinger {
     }
 }
 
+struct PatternData {
+    pattern: String,
+    reply: String
+}
+
+impl PatternData {
+    fn new(pattern: String, reply: String) -> PatternData {
+        PatternData { pattern:pattern, reply:reply }
+    }
+}
+
+/**
+ * Replies to certain pattern of messages with predefined answers.
+ * Useful to provide links to certain resources, etc.
+ *
+ * Answers are stored in a file on disk.
+ */
+struct Replier {
+    patterns: Vec<PatternData>
+}
+
+impl Replier {
+
+    /**
+     * Load the patterns from disk.
+     */
+    fn loadPatterns(&mut self) {
+        //TODO: load from disk
+        let pattern: String = String::from("!stats");
+        let reply: String = String::from("link_to_statistics");
+
+        let pattern2: String = String::from("!reboot");
+        let reply2: String = String::from("ain't happening");
+
+        self.patterns.push(PatternData {pattern: pattern, reply: reply} );
+        self.patterns.push(PatternData {pattern: pattern2, reply: reply2} );
+    }
+
+}
+
+impl MessageHandler for Replier {
+    fn handle_message(&mut self, message :&str) -> Option<String> {
+
+        for p in self.patterns.iter_mut() {
+            if message.contains(&p.pattern) {
+                return Some(p.reply.to_owned());
+            }
+        }
+        None
+    }
+}
+
 struct Updater {
 }
 
@@ -145,10 +197,15 @@ fn main() {
     // Contains all the different message handlers
     let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
+    let mut replier: Replier = Replier { patterns: Vec::new() };
+
+    replier.loadPatterns();
+
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
-    message_handlers.push(Box::new(Pinger {count : 5}));
+    message_handlers.push(Box::new(Pinger {count: 5}));
     message_handlers.push(Box::new(Updater {  }));
+    message_handlers.push(Box::new(replier));
 
     for message in server.iter() {
         let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
