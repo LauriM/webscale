@@ -2,11 +2,13 @@ extern crate hyper;
 extern crate irc;
 extern crate regex;
 
-use std::io::Read;
 use irc::client::prelude::*;
 use hyper::Client;
 use regex::Regex;
 use std::time::Duration;
+use std::io::BufReader;
+use std::fs::File;
+use std::io::prelude::*;
 
 fn get_title_for_url(url :&str) -> Result<String, String> {
     let mut client = Client::new();
@@ -148,15 +150,28 @@ impl Replier {
      * Load the patterns from disk.
      */
     fn loadPatterns(&mut self) {
-        //TODO: load from disk
-        let pattern: String = String::from("!stats");
-        let reply: String = String::from("link_to_statistics");
+        //TODO: Hazard unwrap, fix
+        let mut file = File::open("patterns.txt").unwrap();
+        let mut reader = BufReader::new(file);
 
-        let pattern2: String = String::from("!reboot");
-        let reply2: String = String::from("ain't happening");
+        let mut line = String::new();
 
-        self.patterns.push(PatternData {pattern: pattern, reply: reply} );
-        self.patterns.push(PatternData {pattern: pattern2, reply: reply2} );
+        while reader.read_line(&mut line).unwrap() > 0 {
+
+            {
+                let split: Vec<&str> = line.split("|").collect();
+
+                println!("{}", line);
+                println!("{}", split[0]);
+
+                let pattern: String = String::from(split[0]);
+                let reply: String = String::from(split[1]);
+
+                self.patterns.push(PatternData {pattern: pattern, reply: reply} );
+            }
+
+            line.clear();
+        }
     }
 
 }
