@@ -100,29 +100,6 @@ impl MessageHandler for TitleScrapper {
     }
 }
 
-// Dummy example message handler
-struct Pinger {
-    // How many pongs are we going to give out 
-    // Limited amount of pongs per boot
-    count: i8
-}
-
-impl MessageHandler for Pinger {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
-        if self.count <= 0 {
-            return None;
-        }
-
-        if message.contains("!ping") {
-            self.count = self.count - 1;
-
-            return Some(String::from("pong"));
-        }
-
-        None
-    }
-}
-
 struct PatternData {
     pattern: String,
     reply: String
@@ -218,7 +195,6 @@ fn main() {
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
-    message_handlers.push(Box::new(Pinger {count: 5}));
     message_handlers.push(Box::new(Updater {  }));
     message_handlers.push(Box::new(replier));
 
