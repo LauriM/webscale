@@ -128,7 +128,14 @@ impl Replier {
      */
     fn loadPatterns(&mut self) {
         //TODO: Hazard unwrap, fix
-        let mut file = File::open("patterns.txt").unwrap();
+        let mut file = match File::open("patterns.txt") {
+            Err(e) => {
+                println!("Could not find patterns.txt, not using pattern replies");
+                return 
+            },
+            Ok(file) => file
+        };
+
         let mut reader = BufReader::new(file);
 
         let mut line = String::new();
