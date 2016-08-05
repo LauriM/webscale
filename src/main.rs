@@ -111,21 +111,17 @@ impl PatternData {
     }
 }
 
-/**
- * Replies to certain pattern of messages with predefined answers.
- * Useful to provide links to certain resources, etc.
- *
- * Answers are stored in a file on disk.
- */
+
+//Replies to certain pattern of messages with predefined answers.
+//Useful to provide links to certain resources, etc.
+//
+//Answers are stored in a file on disk.
 struct Replier {
     patterns: Vec<PatternData>
 }
 
 impl Replier {
 
-    /**
-     * Load the patterns from disk.
-     */
     fn loadPatterns(&mut self) {
         //TODO: Hazard unwrap, fix
         let mut file = match File::open("patterns.txt") {
