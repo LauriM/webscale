@@ -9,6 +9,8 @@ use std::time::Duration;
 use std::io::BufReader;
 use std::fs::File;
 use std::io::prelude::*;
+use std::thread;
+use std::sync::mpsc;
 
 fn get_title_for_url(url :&str) -> Result<String, String> {
     let mut client = Client::new();
@@ -201,6 +203,16 @@ fn main() {
     message_handlers.push(Box::new(Updater {  }));
     message_handlers.push(Box::new(replier));
 
+    let (tx, rx) = mpsc::channel();
+
+    // Thread to handle messages we should send back to IRC server
+    thread::spawn(move || {
+        loop {
+            let msg = rx.recv().unwrap();
+            println!("RECEIVING {}", msg);
+        }
+    });
+
     for message in server.iter() {
         let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
 
@@ -213,6 +225,7 @@ fn main() {
                     match handler.handle_message(msg) {
                         Some(msg) => {
                             server.send_privmsg(target, &msg);
+                            tx.send(msg);
                         },
                         None => (),
                     }
