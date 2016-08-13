@@ -123,7 +123,6 @@ struct Replier {
 impl Replier {
 
     fn loadPatterns(&mut self) {
-        //TODO: Hazard unwrap, fix
         let mut file = match File::open("patterns.txt") {
             Err(e) => {
                 println!("Could not find patterns.txt, not using pattern replies");
@@ -175,7 +174,6 @@ impl MessageHandler for Updater {
     fn handle_message(&mut self, message :&str) -> Option<String> {
         if message.contains("!rebuild") {
             panic!("herp");
-            return Some(String::from("May day may day! Taking fire! Whiskey Tango Foxtrot do you read me? MAY DAY MAY DAY"));
         }
 
         None
@@ -198,7 +196,7 @@ fn main() {
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
-    message_handlers.push(Box::new(Updater {  }));
+    message_handlers.push(Box::new(Updater {}));
     message_handlers.push(Box::new(replier));
 
     for message in server.iter() {
