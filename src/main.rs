@@ -10,7 +10,7 @@ use std::io::BufReader;
 use std::fs::File;
 use std::io::prelude::*;
 
-fn get_title_for_url(url :&str) -> Result<String, String> {
+fn get_title_for_url(url: &str) -> Result<String, String> {
     let mut client = Client::new();
     client.set_read_timeout(Some(Duration::new(5, 0)));
 
@@ -22,12 +22,12 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
             res.take(15000).read_to_string(&mut body);
 
             body
-        },
+        }
         Err(err) => return Err(err.to_string()),
     };
 
     // Finding the title from the body
-    
+
     let start_pos = match body.find("<title>") {
         Some(res) => res + 7,
         None => return Err(String::from("Title missing")),
@@ -41,8 +41,7 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
     let mut title: String = body[start_pos..end_pos].to_owned();
 
     // Trim whitespace out of titles because webdevs are just amazing...
-    title = match title.trim().parse()
-    {
+    title = match title.trim().parse() {
         Ok(title) => title,
         Err(_) => return Err(String::from("failed to trim the title!")),
     };
@@ -67,18 +66,17 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
 // If message is received, the reply is send to the same source where it was originating
 //
 // All messages are currently send to all handlers.
-// 
+//
 // TODO: Information of the source should be passed to the handler
 trait MessageHandler {
-
-    // Get an message, if doing something with it, send reply back (reply goes always back to 
-    fn handle_message(&mut self, message :&str) -> Option<String>;
+    // Get an message, if doing something with it, send reply back (reply goes always back to
+    fn handle_message(&mut self, message: &str) -> Option<String>;
 }
 
 struct TitleScrapper;
 
 impl MessageHandler for TitleScrapper {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
+    fn handle_message(&mut self, message: &str) -> Option<String> {
 
         // Move to the struct or something
         let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
@@ -91,7 +89,7 @@ impl MessageHandler for TitleScrapper {
             match get_title_for_url(url) {
                 Ok(title) => {
                     return Some(vec!["Title: ", &title].join(""));
-                } ,
+                }
                 Err(err) => println!("Title fetch failed: {}", err),
             };
         }
@@ -102,33 +100,35 @@ impl MessageHandler for TitleScrapper {
 
 struct PatternData {
     pattern: String,
-    reply: String
+    reply: String,
 }
 
 impl PatternData {
     fn new(pattern: String, reply: String) -> PatternData {
-        PatternData { pattern:pattern, reply:reply }
+        PatternData {
+            pattern: pattern,
+            reply: reply,
+        }
     }
 }
 
 
-//Replies to certain pattern of messages with predefined answers.
-//Useful to provide links to certain resources, etc.
+// Replies to certain pattern of messages with predefined answers.
+// Useful to provide links to certain resources, etc.
 //
-//Answers are stored in a file on disk.
+// Answers are stored in a file on disk.
 struct Replier {
-    patterns: Vec<PatternData>
+    patterns: Vec<PatternData>,
 }
 
 impl Replier {
-
     fn loadPatterns(&mut self) {
         let mut file = match File::open("patterns.txt") {
             Err(e) => {
                 println!("Could not find patterns.txt, not using pattern replies");
-                return 
-            },
-            Ok(file) => file
+                return;
+            }
+            Ok(file) => file,
         };
 
         let mut reader = BufReader::new(file);
@@ -146,17 +146,19 @@ impl Replier {
                 let pattern: String = String::from(split[0]);
                 let reply: String = String::from(split[1]);
 
-                self.patterns.push(PatternData {pattern: pattern, reply: reply} );
+                self.patterns.push(PatternData {
+                    pattern: pattern,
+                    reply: reply,
+                });
             }
 
             line.clear();
         }
     }
-
 }
 
 impl MessageHandler for Replier {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
+    fn handle_message(&mut self, message: &str) -> Option<String> {
 
         for p in self.patterns.iter_mut() {
             if message.contains(&p.pattern) {
@@ -171,7 +173,7 @@ struct Updater {
 }
 
 impl MessageHandler for Updater {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
+    fn handle_message(&mut self, message: &str) -> Option<String> {
         if message.contains("!rebuild") {
             panic!("herp");
         }
@@ -206,17 +208,15 @@ fn main() {
 
         match message.command {
             Command::PRIVMSG(ref target, ref msg) => {
-
                 for handler in message_handlers.iter_mut() {
                     match handler.handle_message(msg) {
                         Some(msg) => {
                             server.send_privmsg(target, &msg);
-                        },
+                        }
                         None => (),
                     }
                 }
-
-            },
+            }
             _ => (),
         }
 
