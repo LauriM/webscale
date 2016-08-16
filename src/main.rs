@@ -14,8 +14,8 @@ fn get_title_for_url(url: &str) -> Result<String, String> {
     let mut client = Client::new();
     client.set_read_timeout(Some(Duration::new(5, 0)));
 
-    let mut body = match client.get(url).send() {
-        Ok(mut res) => {
+    let body = match client.get(url).send() {
+        Ok(res) => {
             let mut body = String::new();
 
             // 15k is a nice round number to keep the trolls away
@@ -103,16 +103,6 @@ struct PatternData {
     reply: String,
 }
 
-impl PatternData {
-    fn new(pattern: String, reply: String) -> PatternData {
-        PatternData {
-            pattern: pattern,
-            reply: reply,
-        }
-    }
-}
-
-
 // Replies to certain pattern of messages with predefined answers.
 // Useful to provide links to certain resources, etc.
 //
@@ -122,8 +112,8 @@ struct Replier {
 }
 
 impl Replier {
-    fn loadPatterns(&mut self) {
-        let mut file = match File::open("patterns.txt") {
+    fn load_patterns(&mut self) {
+        let file = match File::open("patterns.txt") {
             Err(e) => {
                 println!("Could not find patterns.txt, not using pattern replies");
                 return;
@@ -194,7 +184,7 @@ fn main() {
 
     let mut replier: Replier = Replier { patterns: Vec::new() };
 
-    replier.loadPatterns();
+    replier.load_patterns();
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
