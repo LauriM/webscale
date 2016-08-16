@@ -182,6 +182,52 @@ impl MessageHandler for Updater {
     }
 }
 
+struct RandomTopic {
+    counter_publish: u32, // How many messages until we change the topic
+    counter_choose: u32, // How many messages until we choose a new topic
+    queto: String, // Next queto to be posted when amount is hit
+}
+
+const TOPIC_PUBLISH_RATE: u32 = 10;
+const TOPIC_CHOOSE_RATE: u32 = 5;
+
+impl RandomTopic {
+    fn new(counter_publish: u32, counter_choose: u32, queto: String) -> RandomTopic {
+        RandomTopic {
+            counter_publish: counter_publish,
+            counter_choose: counter_choose,
+            queto: queto,
+        }
+    }
+}
+
+// Change topic to a "random" queto periodically
+// Assumes that the bot has rights to change the topic
+impl MessageHandler for RandomTopic {
+    fn handle_message(&mut self, message: &str) -> Option<String> {
+        self.counter_publish -= 1;
+
+        if self.counter_publish == 0 {
+            self.counter_publish = TOPIC_PUBLISH_RATE;
+
+            println!("PUBLISH");
+            //TODO: wrap this into a topic call
+            return Some(format!("/topic {}", self.queto.to_owned()));
+        }
+
+        self.counter_choose -= 1;
+
+        if self.counter_choose == 0 {
+            self.counter_choose = TOPIC_CHOOSE_RATE;
+            println!("CHOOSE {}", message);
+
+            self.queto = message.to_owned();
+        }
+
+        None
+    }
+}
+
 fn main() {
     println!("Webscale is scaling up...");
 
@@ -193,11 +239,11 @@ fn main() {
     let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
     let mut replier: Replier = Replier { patterns: Vec::new() };
-
     replier.loadPatterns();
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
+    message_handlers.push(Box::new(RandomTopic {counter_publish: TOPIC_PUBLISH_RATE, counter_choose: TOPIC_CHOOSE_RATE, queto: String::from("lol")}));
     message_handlers.push(Box::new(Updater {}));
     message_handlers.push(Box::new(replier));
 
