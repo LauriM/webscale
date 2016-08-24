@@ -187,31 +187,53 @@ impl MessageHandler for Updater {
 fn main() {
     println!("Webscale is scaling up...");
 
-    // Setup IRC server.
+    // -- Setup IRC server.
     let server = IrcServer::new("webscale.json").unwrap();
     server.identify().unwrap();
 
-    // Contains all the different message handlers
-    let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
-
+    // -- Setup handlers
     let mut replier: Replier = Replier { patterns: Vec::new() };
-
     replier.loadPatterns();
+
+    // -- List message handlers
+    let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
     message_handlers.push(Box::new(Updater {  }));
     message_handlers.push(Box::new(replier));
 
-    let (tx, rx) = mpsc::channel();
 
-    // Thread to handle messages we should send back to IRC server
+    // Thread handling stuff send to the server
+    let server_outbound = server.clone();
+    let (server_outbound_tx, server_outbound_rx) = mpsc::channel();
+
     thread::spawn(move || {
         loop {
-            let msg = rx.recv().unwrap();
-            println!("RECEIVING {}", msg);
+            server_outbound_rx.recv();
+
+            print!("Should send to server");
         }
     });
+
+    // Thread handling the irc connection
+    let server_incoming = server.clone();
+    thread::spawn(move || {
+        for message in server_incoming.iter() {
+            let message = message.unwrap(); // TODO: handle this with more care
+
+            println!("{}", message);
+        }
+    });
+
+    server_outbound_tx.send("hello");
+
+    //TODO: Change this to a wait for exit command
+    loop { }
+
+    /*
+       let msg = rx.recv().unwrap();
+       println!("RECEIVING {}", msg);
 
     for message in server.iter() {
         let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
@@ -236,6 +258,7 @@ fn main() {
         }
 
     }
+    */
 
     println!("Lost connection, shutting down...");
 }
