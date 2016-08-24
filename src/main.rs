@@ -129,6 +129,11 @@ struct Replier {
 
 impl Replier {
     fn load_patterns(&mut self) {
+        self.patterns.push(PatternData {
+            pattern: String::from("!version"),
+            reply: String::from(env!("CARGO_PKG_VERSION")),
+        });
+
         //TODO: Hazard unwrap, fix
         let mut file = match File::open("patterns.txt") {
             Err(e) => {
@@ -141,11 +146,6 @@ impl Replier {
         let mut reader = BufReader::new(file);
 
         let mut line = String::new();
-
-        self.patterns.push(PatternData {
-            pattern: String::from("!version"),
-            reply: String::from(env!("CARGO_PKG_VERSION")),
-        });
 
         while reader.read_line(&mut line).unwrap() > 0 {
 
