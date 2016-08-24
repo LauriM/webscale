@@ -10,6 +10,7 @@ use std::io::BufReader;
 use std::fs::File;
 use std::io::prelude::*;
 use std::thread;
+use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
 
 fn get_title_for_url(url :&str) -> Result<String, String> {
@@ -60,6 +61,11 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
     Ok(title)
 }
 
+// Contains relevant information to a single message
+struct IrcMessage {
+    target :String, // privmsg target
+    message :String, // Message itself
+}
 
 // MessageHandler is a simple abstraction for different features
 //
@@ -75,26 +81,26 @@ trait MessageHandler {
 
     // message, what is send from IRC server
     // tx, channel that can be used to send replies back to the IRC server
-    fn handle_message(&mut self, message :&str, tx :mpsc::Sender<i32>);
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>);
 }
 
 struct TitleScrapper;
 
 impl MessageHandler for TitleScrapper {
-    fn handle_message(&mut self, message :&str, tx :mpsc::Sender<i32>) {
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>) {
 
         // Move to the struct or something
         let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
 
-        if url_pattern.is_match(&message) {
-            let url = url_pattern.captures(&message).unwrap().at(0).unwrap();
+        if url_pattern.is_match(&message.message) {
+            let url = url_pattern.captures(&message.message).unwrap().at(0).unwrap();
 
             println!("We should fetch url: {}", url);
 
             match get_title_for_url(url) {
                 Ok(title) => {
-                    tx.send(42);
-                    println!("title: {}", title);
+                    let reply = IrcMessage { target: message.target, message: title };
+                    tx.send(reply);
                 } ,
                 Err(err) => println!("Failed to fetch title for: {}", err),
             };
@@ -208,12 +214,12 @@ fn main() {
 
     // Thread handling stuff send to the server
     let server_outbound = server.clone();
-    let (server_outbound_tx, server_outbound_rx) = mpsc::channel();
+    let (server_outbound_tx, server_outbound_rx): (Sender<IrcMessage>, Receiver<IrcMessage>) = mpsc::channel();
 
     thread::spawn(move || {
         loop {
-            server_outbound_rx.recv();
-            server_outbound.send_privmsg("#0xbotdev", "hello");
+            let msg = server_outbound_rx.recv().unwrap();
+            server_outbound.send_privmsg(&msg.target, &msg.message);
         }
     });
 
@@ -225,7 +231,8 @@ fn main() {
             Command::PRIVMSG(ref target, ref msg) => {
 
                 for handler in message_handlers.iter_mut() {
-                    handler.handle_message(msg, server_outbound_tx.clone());
+                    let irc_msg = IrcMessage { target: target.to_owned(), message: msg.to_owned() };
+                    handler.handle_message(irc_msg, server_outbound_tx.clone());
                 }
 
             },
@@ -233,7 +240,7 @@ fn main() {
         }
 
         // "Logging" to stdout
-        println!("{}", message);
+        print!("{}", message);
     }
 
     println!("Lost connection, shutting down...");
