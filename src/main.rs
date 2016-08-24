@@ -142,6 +142,11 @@ impl Replier {
 
         let mut line = String::new();
 
+        self.patterns.push(PatternData {
+            pattern: String::from("!version"),
+            reply: String::from(env!("CARGO_PKG_VERSION")),
+        });
+
         while reader.read_line(&mut line).unwrap() > 0 {
 
             {
