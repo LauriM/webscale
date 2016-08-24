@@ -108,7 +108,6 @@ impl MessageHandler for TitleScrapper {
     }
 }
 
-/*
 struct PatternData {
     pattern: String,
     reply: String
@@ -166,14 +165,14 @@ impl Replier {
 }
 
 impl MessageHandler for Replier {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
-
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>) {
         for p in self.patterns.iter_mut() {
-            if message.contains(&p.pattern) {
-                return Some(p.reply.to_owned());
+            if message.message.contains(&p.pattern) {
+
+                let reply = IrcMessage { target: message.target.to_owned(), message: p.reply.to_owned() };
+                tx.send(reply);
             }
         }
-        None
     }
 }
 
@@ -181,16 +180,13 @@ struct Updater {
 }
 
 impl MessageHandler for Updater {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
-        if message.contains("!rebuild") {
-            panic!("herp");
-            return Some(String::from("May day may day! Taking fire! Whiskey Tango Foxtrot do you read me? MAY DAY MAY DAY"));
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>) {
+        if message.message.contains("!rebuild") {
+            panic!("herp"); // we just crash the whole damn thing
+            //TODO: Add proper exit handling
         }
-
-        None
     }
 }
-*/
 
 fn main() {
     println!("Webscale is scaling up...");
@@ -200,16 +196,16 @@ fn main() {
     server.identify().unwrap();
 
     // -- Setup handlers
-    //let mut replier: Replier = Replier { patterns: Vec::new() };
-    //replier.loadPatterns();
+    let mut replier: Replier = Replier { patterns: Vec::new() };
+    replier.loadPatterns();
 
     // -- List message handlers
     let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
-    //message_handlers.push(Box::new(Updater {  }));
-    //message_handlers.push(Box::new(replier));
+    message_handlers.push(Box::new(Updater {  }));
+    message_handlers.push(Box::new(replier));
 
 
     // Thread handling stuff send to the server
