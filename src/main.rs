@@ -9,6 +9,9 @@ use std::time::Duration;
 use std::io::BufReader;
 use std::fs::File;
 use std::io::prelude::*;
+use std::thread;
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc;
 
 fn get_title_for_url(url: &str) -> Result<String, String> {
     let mut client = Client::new();
@@ -57,6 +60,11 @@ fn get_title_for_url(url: &str) -> Result<String, String> {
     Ok(title)
 }
 
+// Contains relevant information to a single message
+struct IrcMessage {
+    target :String, // privmsg target
+    message :String, // Message itself
+}
 
 // MessageHandler is a simple abstraction for different features
 //
@@ -69,32 +77,33 @@ fn get_title_for_url(url: &str) -> Result<String, String> {
 //
 // TODO: Information of the source should be passed to the handler
 trait MessageHandler {
-    // Get an message, if doing something with it, send reply back (reply goes always back to
-    fn handle_message(&mut self, message: &str) -> Option<String>;
+
+    // message, what is send from IRC server
+    // tx, channel that can be used to send replies back to the IRC server
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>);
 }
 
 struct TitleScrapper;
 
 impl MessageHandler for TitleScrapper {
-    fn handle_message(&mut self, message: &str) -> Option<String> {
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>) {
 
         // Move to the struct or something
         let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
 
-        if url_pattern.is_match(&message) {
-            let url = url_pattern.captures(&message).unwrap().at(0).unwrap();
+        if url_pattern.is_match(&message.message) {
+            let url = url_pattern.captures(&message.message).unwrap().at(0).unwrap();
 
             println!("We should fetch url: {}", url);
 
             match get_title_for_url(url) {
                 Ok(title) => {
-                    return Some(vec!["Title: ", &title].join(""));
-                }
-                Err(err) => println!("Title fetch failed: {}", err),
+                    let reply = IrcMessage { target: message.target, message: title };
+                    tx.send(reply);
+                } ,
+                Err(err) => println!("Failed to fetch title for: {}", err),
             };
         }
-
-        None
     }
 }
 
@@ -113,7 +122,8 @@ struct Replier {
 
 impl Replier {
     fn load_patterns(&mut self) {
-        let file = match File::open("patterns.txt") {
+        //TODO: Hazard unwrap, fix
+        let mut file = match File::open("patterns.txt") {
             Err(e) => {
                 println!("Could not find patterns.txt, not using pattern replies");
                 return;
@@ -130,9 +140,6 @@ impl Replier {
             {
                 let split: Vec<&str> = line.split("|").collect();
 
-                println!("{}", line);
-                println!("{}", split[0]);
-
                 let pattern: String = String::from(split[0]);
                 let reply: String = String::from(split[1]);
 
@@ -148,14 +155,14 @@ impl Replier {
 }
 
 impl MessageHandler for Replier {
-    fn handle_message(&mut self, message: &str) -> Option<String> {
-
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>) {
         for p in self.patterns.iter_mut() {
-            if message.contains(&p.pattern) {
-                return Some(p.reply.to_owned());
+            if message.message.contains(&p.pattern) {
+
+                let reply = IrcMessage { target: message.target.to_owned(), message: p.reply.to_owned() };
+                tx.send(reply);
             }
         }
-        None
     }
 }
 
@@ -163,53 +170,62 @@ struct Updater {
 }
 
 impl MessageHandler for Updater {
-    fn handle_message(&mut self, message: &str) -> Option<String> {
-        if message.contains("!rebuild") {
-            panic!("herp");
+    fn handle_message(&mut self, message :IrcMessage, tx :mpsc::Sender<IrcMessage>) {
+        if message.message.contains("!rebuild") {
+            panic!("herp"); // we just crash the whole damn thing
+            //TODO: Add proper exit handling
         }
-
-        None
     }
 }
 
 fn main() {
     println!("Webscale is scaling up...");
 
-    // Setup IRC server.
+    // -- Setup IRC server.
     let server = IrcServer::new("webscale.json").unwrap();
     server.identify().unwrap();
 
-    // Contains all the different message handlers
-    let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
-
+    // -- Setup handlers
     let mut replier: Replier = Replier { patterns: Vec::new() };
 
     replier.load_patterns();
+
+    // -- List message handlers
+    let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
     message_handlers.push(Box::new(Updater {}));
     message_handlers.push(Box::new(replier));
 
-    for message in server.iter() {
-        let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
 
-        print!("{}", message);
+    // Thread handling stuff send to the server
+    let server_outbound = server.clone();
+    let (server_outbound_tx, server_outbound_rx): (Sender<IrcMessage>, Receiver<IrcMessage>) = mpsc::channel();
+
+    thread::spawn(move || {
+        loop {
+            let msg = server_outbound_rx.recv().unwrap();
+            server_outbound.send_privmsg(&msg.target, &msg.message);
+        }
+    });
+
+    // Thread handling the irc connection
+    for message in server.iter() {
+        let message = message.unwrap(); // TODO: handle this with more care
 
         match message.command {
             Command::PRIVMSG(ref target, ref msg) => {
                 for handler in message_handlers.iter_mut() {
-                    match handler.handle_message(msg) {
-                        Some(msg) => {
-                            server.send_privmsg(target, &msg);
-                        }
-                        None => (),
-                    }
+                    let irc_msg = IrcMessage { target: target.to_owned(), message: msg.to_owned() };
+                    handler.handle_message(irc_msg, server_outbound_tx.clone());
                 }
             }
             _ => (),
         }
 
+        // "Logging" to stdout
+        print!("{}", message);
     }
 
     println!("Lost connection, shutting down...");
