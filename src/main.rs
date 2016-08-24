@@ -92,17 +92,24 @@ impl MessageHandler for TitleScrapper {
         let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
 
         if url_pattern.is_match(&message.message) {
-            let url = url_pattern.captures(&message.message).unwrap().at(0).unwrap();
 
-            println!("We should fetch url: {}", url);
+            // Thread spawned to make sure invalid links won't kill the whole bot
+            thread::spawn(move || {
+                let target = message.target;
+                let message = message.message;
 
-            match get_title_for_url(url) {
-                Ok(title) => {
-                    let reply = IrcMessage { target: message.target, message: title };
-                    tx.send(reply);
-                } ,
-                Err(err) => println!("Failed to fetch title for: {}", err),
-            };
+                let url = url_pattern.captures(&message).unwrap().at(0).unwrap();
+
+                println!("Fetching URL: {}", url);
+
+                match get_title_for_url(url) {
+                    Ok(title) => {
+                        let reply = IrcMessage { target: target, message: title };
+                        tx.send(reply);
+                    } ,
+                    Err(err) => println!("Failed to fetch title for: {}", err),
+                };
+            });
         }
     }
 }
