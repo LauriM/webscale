@@ -73,14 +73,15 @@ fn get_title_for_url(url :&str) -> Result<String, String> {
 // TODO: Information of the source should be passed to the handler
 trait MessageHandler {
 
-    // Get an message, if doing something with it, send reply back (reply goes always back to 
-    fn handle_message(&mut self, message :&str) -> Option<String>;
+    // message, what is send from IRC server
+    // tx, channel that can be used to send replies back to the IRC server
+    fn handle_message(&mut self, message :&str, tx :mpsc::Sender<i32>);
 }
 
 struct TitleScrapper;
 
 impl MessageHandler for TitleScrapper {
-    fn handle_message(&mut self, message :&str) -> Option<String> {
+    fn handle_message(&mut self, message :&str, tx :mpsc::Sender<i32>) {
 
         // Move to the struct or something
         let url_pattern = Regex::new(r"(http[s]?://[^\s]+)").unwrap();
@@ -92,16 +93,16 @@ impl MessageHandler for TitleScrapper {
 
             match get_title_for_url(url) {
                 Ok(title) => {
-                    return Some(vec!["Title: ", &title].join(""));
+                    tx.send(42);
+                    println!("title: {}", title);
                 } ,
-                Err(err) => println!("Title fetch failed: {}", err),
+                Err(err) => println!("Failed to fetch title for: {}", err),
             };
         }
-
-        None
     }
 }
 
+/*
 struct PatternData {
     pattern: String,
     reply: String
@@ -183,6 +184,7 @@ impl MessageHandler for Updater {
         None
     }
 }
+*/
 
 fn main() {
     println!("Webscale is scaling up...");
@@ -192,16 +194,16 @@ fn main() {
     server.identify().unwrap();
 
     // -- Setup handlers
-    let mut replier: Replier = Replier { patterns: Vec::new() };
-    replier.loadPatterns();
+    //let mut replier: Replier = Replier { patterns: Vec::new() };
+    //replier.loadPatterns();
 
     // -- List message handlers
     let mut message_handlers: Vec<Box<MessageHandler>> = Vec::new();
 
     // Add all different handlers into use
     message_handlers.push(Box::new(TitleScrapper {}));
-    message_handlers.push(Box::new(Updater {  }));
-    message_handlers.push(Box::new(replier));
+    //message_handlers.push(Box::new(Updater {  }));
+    //message_handlers.push(Box::new(replier));
 
 
     // Thread handling stuff send to the server
@@ -211,54 +213,28 @@ fn main() {
     thread::spawn(move || {
         loop {
             server_outbound_rx.recv();
-
-            print!("Should send to server");
+            server_outbound.send_privmsg("#0xbotdev", "hello");
         }
     });
 
     // Thread handling the irc connection
-    let server_incoming = server.clone();
-    thread::spawn(move || {
-        for message in server_incoming.iter() {
-            let message = message.unwrap(); // TODO: handle this with more care
-
-            println!("{}", message);
-        }
-    });
-
-    server_outbound_tx.send("hello");
-
-    //TODO: Change this to a wait for exit command
-    loop { }
-
-    /*
-       let msg = rx.recv().unwrap();
-       println!("RECEIVING {}", msg);
-
     for message in server.iter() {
-        let message = message.unwrap(); //If IRC message doesn't unwrap, we probably lost connection
-
-        print!("{}", message);
+        let message = message.unwrap(); // TODO: handle this with more care
 
         match message.command {
             Command::PRIVMSG(ref target, ref msg) => {
 
                 for handler in message_handlers.iter_mut() {
-                    match handler.handle_message(msg) {
-                        Some(msg) => {
-                            server.send_privmsg(target, &msg);
-                            tx.send(msg);
-                        },
-                        None => (),
-                    }
+                    handler.handle_message(msg, server_outbound_tx.clone());
                 }
 
             },
             _ => (),
         }
 
+        // "Logging" to stdout
+        println!("{}", message);
     }
-    */
 
     println!("Lost connection, shutting down...");
 }
