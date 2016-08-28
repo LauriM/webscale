@@ -1,6 +1,7 @@
 extern crate hyper;
 extern crate irc;
 extern crate regex;
+extern crate getopts;
 
 use irc::client::prelude::*;
 use hyper::Client;
@@ -12,6 +13,8 @@ use std::io::prelude::*;
 use std::thread;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
+use getopts::Options;
+use std::env;
 
 fn get_title_for_url(url: &str) -> Result<String, String> {
     let mut client = Client::new();
@@ -193,8 +196,33 @@ impl MessageHandler for Updater {
 fn main() {
     println!("Webscale is scaling up...");
 
+    let args: Vec<String> = env::args().collect();
+
+    let mut opts = Options::new();
+    opts.optopt("c", "config", "set config file name to use", "<name>");
+    opts.optflag("h", "help", "print this help menu");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => { m }
+        Err(f) => { panic!(f.to_string()) }
+    };
+
+    if matches.opt_present("h") {
+        print!("{}", opts.usage("webscale"));
+        return;
+    }
+
+    let mut config_filename = String::from("webscale.json");
+    let conf = matches.opt_str("config");
+
+    match conf {
+        Some(c) => config_filename = c,
+        None => {}, 
+    }
+
     // -- Setup IRC server.
-    let server = IrcServer::new("webscale.json").unwrap();
+    println!("Loading config file: {}", config_filename);
+    let server = IrcServer::new(config_filename).unwrap();
     server.identify().unwrap();
 
     // -- Setup handlers
