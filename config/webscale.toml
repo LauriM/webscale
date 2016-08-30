@@ -1,0 +1,12 @@
+[core]
+retries = 5
+
+[[server]]
+name = "freenode"
+hostname = "irc.freenode.net"
+port = 6697
+
+[[server]]
+name = "gamesurge"
+hostname = "irc.gamesurge.net"
+port = 6697
