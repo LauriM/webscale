@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::Read;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use rustc_serialize::Decodable;
 use toml;
 
@@ -8,6 +8,7 @@ use toml;
 pub struct Config {
     pub core: CoreConfig,
     pub server: Vec<ServerConfig>,
+    pub plugin: BTreeMap<String, toml::Value>
 }
 
 impl Config {
