@@ -7,4 +7,6 @@ authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>", "David Kushner <ro
 toml = "0.2"
 rustc-serialize = "0.3"
 log = "0.3.6"
+glob = "*"
+semver = "0.4.0"
 

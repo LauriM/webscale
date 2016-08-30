@@ -1,5 +1,6 @@
 [core]
 retries = 5
+plugins = "resources/plugins"
 
 [[server]]
 name = "freenode"
@@ -10,3 +11,7 @@ port = 6697
 name = "gamesurge"
 hostname = "irc.gamesurge.net"
 port = 6697
+
+[plugins.wiki]
+setting = 500
+whatever = "okay"

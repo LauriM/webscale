@@ -1,12 +1,13 @@
 use std::fs::File;
 use std::io::Read;
+use std::collections::HashMap;
 use rustc_serialize::Decodable;
 use toml;
 
 #[derive(Debug, RustcDecodable, Default)]
 pub struct Config {
-    core: CoreConfig,
-    server: Vec<ServerConfig>
+    pub core: CoreConfig,
+    pub server: Vec<ServerConfig>,
 }
 
 impl Config {
@@ -35,13 +36,14 @@ impl Config {
 }
 
 #[derive(Debug, RustcDecodable, Default)]
-struct CoreConfig {
-    retries: i32
+pub struct CoreConfig {
+    pub retries: i32,
+    pub plugins: String
 }
 
 #[derive(Debug, RustcDecodable, Default)]
-struct ServerConfig {
-    name: String,
-    hostname: String,
-    port: i32
+pub struct ServerConfig {
+    pub name: String,
+    pub hostname: String,
+    pub port: i32
 }
