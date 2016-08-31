@@ -6,7 +6,6 @@ extern crate toml;
 extern crate semver;
 extern crate serde;
 extern crate glob;
-extern crate webscale_plugin;
 
 mod webscale;
 

@@ -3,7 +3,6 @@ use std::path::Path;
 use glob::glob;
 use semver::Version;
 use webscale::config::Config;
-use webscale_plugin::{Plugin, PluginDescription};
 
 #[cfg(windows)]
 const EXTENSION: &'static str = "dll";

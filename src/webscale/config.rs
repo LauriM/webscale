@@ -7,7 +7,8 @@ use toml;
 #[derive(Debug, Deserialize, Default)]
 pub struct Config {
     pub core: CoreConfig,
-    pub server: Vec<ServerConfig>
+    pub server: Vec<ServerConfig>,
+    pub plugins: toml::Table
 }
 
 impl Config {
