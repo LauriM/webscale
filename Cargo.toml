@@ -5,8 +5,9 @@ authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>", "David Kushner <ro
 
 [dependencies]
 toml = "0.2"
-rustc-serialize = "0.3"
 log = "0.3.6"
 glob = "*"
+serde = "0.8.4"
 semver = "0.4.0"
+webscale_plugin = { path = "../webscale_plugin" }
 

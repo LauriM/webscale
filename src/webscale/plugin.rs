@@ -3,6 +3,16 @@ use std::path::Path;
 use glob::glob;
 use semver::Version;
 use webscale::config::Config;
+use webscale_plugin::{Plugin, PluginDescription};
+
+#[cfg(windows)]
+const EXTENSION: &'static str = "dll";
+
+#[cfg(mac)]
+const EXTENSION: &'static str = "dylib";
+
+#[cfg(unix)]
+const EXTENSION: &'static str = "so";
 
 pub struct Registry {
     index: HashMap<String, Status>
@@ -14,11 +24,9 @@ impl Registry {
     }
 
     pub fn scan(&mut self, path: &Path) {
-        let extension = if cfg!(windows) { "dll" } else { "so" };
-
         let mut route_buf = path.to_path_buf();
         route_buf.push("*");
-        route_buf.set_extension(extension);
+        route_buf.set_extension(EXTENSION);
 
         let route = route_buf.to_str().unwrap();
 

@@ -1,13 +1,13 @@
 use std::fs::File;
 use std::io::Read;
-use std::collections::HashMap;
-use rustc_serialize::Decodable;
+use std::collections::BTreeMap;
+use serde::{Serialize, Deserialize, Deserializer};
 use toml;
 
-#[derive(Debug, RustcDecodable, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Config {
     pub core: CoreConfig,
-    pub server: Vec<ServerConfig>,
+    pub server: Vec<ServerConfig>
 }
 
 impl Config {
@@ -28,20 +28,20 @@ impl Config {
             None => return Err("The config file was empty.".to_string())
         };
 
-        match Config::decode(&mut decoder) {
+        match Deserialize::deserialize(&mut decoder) {
             Ok(config) => Ok(config),
             Err(err) => Err(err.to_string())
         }
     }
 }
 
-#[derive(Debug, RustcDecodable, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct CoreConfig {
     pub retries: i32,
     pub plugins: String
 }
 
-#[derive(Debug, RustcDecodable, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct ServerConfig {
     pub name: String,
     pub hostname: String,
