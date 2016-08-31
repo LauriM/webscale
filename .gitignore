@@ -3,3 +3,5 @@ Cargo.lock
 
 webscale.json
 patterns.txt
+
+config/plugins/

@@ -1,8 +1,11 @@
+#![feature(custom_derive, plugin)]
+#![plugin(serde_macros)]
+
 #[macro_use]
 extern crate log;
 extern crate toml;
 extern crate semver;
-extern crate rustc_serialize;
+extern crate serde;
 extern crate glob;
 
 mod webscale;
