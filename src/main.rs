@@ -6,6 +6,8 @@ extern crate log;
 extern crate toml;
 extern crate semver;
 extern crate serde;
+extern crate libloading as lib;
+extern crate webscale_plugin;
 extern crate glob;
 
 mod webscale;

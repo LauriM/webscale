@@ -9,5 +9,7 @@ log = "0.3.6"
 glob = "*"
 serde = "0.8.4"
 serde_macros = "0.8"
+webscale_plugin = { path = "../webscale_plugin" }
 semver = "0.4.0"
+libloading = "0.3"
 
