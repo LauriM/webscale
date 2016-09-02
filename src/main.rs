@@ -14,7 +14,10 @@ extern crate glob;
 mod webscale;
 
 use webscale::{config, plugin};
+use webscale::Session;
 use std::path::Path;
+use std::thread;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     // Merge configuration from multiple sources.
@@ -28,5 +31,16 @@ fn main() {
     let path = Path::new(&config.core.plugins);
     let mut registry = plugin::Registry::new();
     registry.scan(path);
+
+    let mut sessions = Vec::new();
+    for server in config.servers.clone() {
+        sessions.push(thread::spawn(move || {
+            let session = Session::new(&server).start();
+        }));
+    }
+
+    for session in sessions {
+        session.join().unwrap();
+    }
 }
 

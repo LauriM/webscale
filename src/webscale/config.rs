@@ -7,7 +7,7 @@ use toml;
 #[derive(Debug, Deserialize, Default)]
 pub struct Config {
     pub core: CoreConfig,
-    pub server: Vec<ServerConfig>,
+    pub servers: Vec<ServerConfig>,
     pub plugins: toml::Table
 }
 
@@ -42,9 +42,13 @@ pub struct CoreConfig {
     pub plugins: String
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct ServerConfig {
     pub name: String,
+    pub nickname: String,
     pub hostname: String,
-    pub port: i32
+    pub port: Option<u16>,
+    pub username: Option<String>,
+    pub ssl: Option<bool>,
+    pub channels: Option<Vec<String>>
 }
