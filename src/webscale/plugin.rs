@@ -16,17 +16,19 @@ const EXTENSION: &'static str = "dylib";
 const EXTENSION: &'static str = "so";
 
 const DESCRIPTION_LABEL: &'static [u8] = b"WS_PLUGIN_DESCRIPTION\0";
+const INITIALIZER_LABEL: &'static [u8] = b"initialize_plugin\0";
 
 type PluginStatus = Result<Handle, String>;
 type Initializer = unsafe extern fn(&PluginConfig) -> Box<Plugin>;
 
 pub struct Registry {
-    index: HashMap<String, PluginStatus>
+    index: HashMap<String, PluginStatus>,
+    lookup: HashMap<String, String>
 }
 
 impl Registry {
     pub fn new() -> Self {
-        Registry { index: HashMap::new() }
+        Registry { index: HashMap::new(), lookup: HashMap::new() }
     }
 
     pub fn scan(&mut self, path: &Path) {
@@ -45,7 +47,14 @@ impl Registry {
         for resolved in libraries {
             let raw_path = resolved.to_str().unwrap();
             println!("Loading plugin from {}.", raw_path);
-            self.index.insert(String::from(raw_path), Self::load(raw_path));
+
+            let status = Self::load(raw_path);
+            if let Ok(handle) = status {
+                self.lookup.insert(String::from(raw_path), handle.name.clone());
+                self.index.insert(String::from(raw_path), Ok(handle));
+            } else {
+                self.index.insert(String::from(raw_path), status);
+            }
         }
     }
 
@@ -55,7 +64,7 @@ impl Registry {
             Err(err) => return Err(err.to_string())
         };
 
-        unsafe {
+        let (name, version, plugin) = unsafe {
             let description: Symbol<*mut PluginDescription> = 
                 match lib.get(DESCRIPTION_LABEL) {
                     Ok(desc) => desc,
@@ -66,22 +75,31 @@ impl Registry {
                 };
 
             println!("Found plugin description {:?}.", **description);
-            let initializer: Initializer = 
-                match lib.get((**description).initializer) {
-                    Ok(func) => *func,
+            let initializer: Symbol<Initializer> = 
+                match lib.get(INITIALIZER_LABEL) {
+                    Ok(func) => func,
                     Err(err) => {
-                        println!("Failed to locate initializer for {}.", path);
+                        println!("Failed to locate initializer {:?} for {}.", 
+                                 (**description).initializer, path);
                         return Err(err.to_string());
                     }
                 };
 
-            Ok(Handle {
-                name: String::from((**description).name),
-                version: Version::parse((**description).version).unwrap(),
-                source: path.to_string(),
-                plugin: initializer(&BTreeMap::new())
-            })
-        }
+            let name = String::from((**description).name);
+            let version = Version::parse((**description).version).unwrap();
+            let initializer = initializer;
+            let plugin = initializer(&BTreeMap::new()) as Box<Plugin>;
+            
+            (name, version, plugin)
+        };
+
+        Ok(Handle {
+            name: name,
+            version: version,
+            source: path.to_string(),
+            plugin: plugin,
+            library: lib
+        })
     }
 }
 
@@ -89,5 +107,6 @@ pub struct Handle {
     name: String,
     version: Version,
     source: String,
-    plugin: Box<Plugin>
+    plugin: Box<Plugin>,
+    library: Library
 }

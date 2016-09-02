@@ -1,0 +1,12 @@
+[package]
+name = "webscale_plugin_tests"
+version = "0.1.0"
+authors = ["David Kushner <root@davidkushner.me>"]
+
+[lib]
+name = "webscale_plugin_tests"
+path = "lib.rs"
+crate-type = ["dylib"]
+
+[dependencies]
+webscale_plugin = { path = '../' }

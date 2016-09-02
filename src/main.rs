@@ -7,6 +7,7 @@ extern crate toml;
 extern crate semver;
 extern crate serde;
 extern crate libloading as lib;
+extern crate irc;
 extern crate webscale_plugin;
 extern crate glob;
 
@@ -27,7 +28,5 @@ fn main() {
     let path = Path::new(&config.core.plugins);
     let mut registry = plugin::Registry::new();
     registry.scan(path);
-
-    println!("{:?}", config);
 }
 
