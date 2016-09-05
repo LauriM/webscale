@@ -26,10 +26,13 @@ macro_rules! export_plugin (
 
 pub type PluginConfig = BTreeMap<String, String>;
 
-pub trait Plugin {
-    fn on_connect(&self);
-    fn on_disconnect(&self);
-    fn on_message(&self);
+pub trait Plugin: Send {
+    fn on_connect(&self, &Link);
+    fn on_disconnect(&self, &Link);
+    fn on_message(&self, &Link, &str, &str);
+    fn on_action(&self, &Link, &str, &str);
+    fn on_join(&self, &Link, &str);
+    fn on_leave(&self, &Link, &str);
 }
 
 #[derive(Debug)]
@@ -37,4 +40,14 @@ pub struct PluginDescription {
     pub name: &'static str,
     pub version: &'static str,
     pub initializer: &'static [u8]
+}
+
+pub struct User {
+    pub name: String,
+    pub login: String,
+    pub hostname: String
+}
+
+pub trait Link {
+    fn send(&self, target: &str, message: &str);
 }

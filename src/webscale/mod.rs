@@ -5,6 +5,8 @@ use irc::client::prelude::*;
 use std::default::Default;
 use webscale::plugin::Registry;
 use webscale::config::ServerConfig;
+use std::sync::{Arc, Mutex};
+use webscale_plugin::Link;
 
 pub struct Session { 
     server: IrcServer
@@ -28,12 +30,44 @@ impl Session {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&self, registry: Arc<Mutex<Registry>>) {
         self.server.identify().unwrap();
 
-        for message in self.server.iter() {
-            println!("{:?}", message);
+        // Notify all plugins that this session has started.
+        {
+            let registry = registry.lock().unwrap();
+            for status in registry.iter() {
+                if let &Ok(ref handle) = status {
+                    handle.plugin.on_connect(self);
+                }
+            }
         }
+
+        // Poll messages from the server and dispatch them to
+        // registered plugins.
+        for message in self.server.iter() {
+            let message = message.unwrap();
+
+            println!("{:?}", message);
+
+            let registry = registry.lock().unwrap();
+            for status in registry.iter() {
+                if let &Ok(ref handle) = status {
+                    match message.command {
+                        Command::PRIVMSG(ref target, ref content) => {
+                            handle.plugin.on_message(self, target, content);
+                        },
+                        _ => ()
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Link for Session {
+    fn send(&self, target: &str, message: &str) {
+        self.server.send_privmsg(target, message);
     }
 }
 

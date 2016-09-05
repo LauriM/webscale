@@ -1,4 +1,5 @@
 use std::collections::{HashMap, BTreeMap};
+use std::collections::hash_map;
 use std::path::Path;
 use glob::glob;
 use semver::Version;
@@ -16,7 +17,6 @@ const EXTENSION: &'static str = "dylib";
 const EXTENSION: &'static str = "so";
 
 const DESCRIPTION_LABEL: &'static [u8] = b"WS_PLUGIN_DESCRIPTION\0";
-const INITIALIZER_LABEL: &'static [u8] = b"initialize_plugin\0";
 
 type PluginStatus = Result<Handle, String>;
 type Initializer = unsafe extern fn(&PluginConfig) -> Box<Plugin>;
@@ -27,11 +27,10 @@ pub struct Registry {
 }
 
 impl Registry {
-    pub fn new() -> Self {
-        Registry { index: HashMap::new(), lookup: HashMap::new() }
-    }
+    pub fn new(path: &Path) -> Self {
+        let mut index = HashMap::new();
+        let mut lookup = HashMap::new();
 
-    pub fn scan(&mut self, path: &Path) {
         let mut route_buf = path.to_path_buf();
         route_buf.push("*");
         route_buf.set_extension(EXTENSION);
@@ -50,12 +49,14 @@ impl Registry {
 
             let status = Self::load(raw_path);
             if let Ok(handle) = status {
-                self.lookup.insert(String::from(raw_path), handle.name.clone());
-                self.index.insert(String::from(raw_path), Ok(handle));
+                lookup.insert(String::from(raw_path), handle.name.clone());
+                index.insert(String::from(raw_path), Ok(handle));
             } else {
-                self.index.insert(String::from(raw_path), status);
+                index.insert(String::from(raw_path), status);
             }
         }
+
+        Registry { lookup: lookup, index: index }
     }
 
     fn load(path: &str) -> PluginStatus {
@@ -76,7 +77,7 @@ impl Registry {
 
             println!("Found plugin description {:?}.", **description);
             let initializer: Symbol<Initializer> = 
-                match lib.get(INITIALIZER_LABEL) {
+                match lib.get((**description).initializer) {
                     Ok(func) => func,
                     Err(err) => {
                         println!("Failed to locate initializer {:?} for {}.", 
@@ -101,12 +102,34 @@ impl Registry {
             library: lib
         })
     }
+
+    pub fn iter<'a>(&'a self) -> RegistryIterator {
+        RegistryIterator::new(self)
+    }
+}
+
+pub struct RegistryIterator<'a> {
+    iter: hash_map::Values<'a, String, PluginStatus>
+}
+
+impl <'a> RegistryIterator<'a> {
+    pub fn new(registry: &'a Registry) -> RegistryIterator {
+        RegistryIterator { iter: registry.index.values() }
+    }
+}
+
+impl <'a> Iterator for RegistryIterator<'a> {
+    type Item = &'a PluginStatus;
+
+    fn next(&mut self) -> Option<&'a PluginStatus> {
+        self.iter.next()
+    }
 }
 
 pub struct Handle {
-    name: String,
-    version: Version,
-    source: String,
-    plugin: Box<Plugin>,
-    library: Library
+    pub name: String,
+    pub version: Version,
+    pub source: String,
+    pub plugin: Box<Plugin>,
+    pub library: Library
 }

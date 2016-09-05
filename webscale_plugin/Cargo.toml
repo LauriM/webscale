@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["David Kushner <david.kushner@bhnetwork.com>"]
 
 [dependencies]
+irc = "0.11.4"
