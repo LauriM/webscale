@@ -13,7 +13,7 @@ const EXTENSION: &'static str = "dll";
 #[cfg(target_os = "macos")]
 const EXTENSION: &'static str = "dylib";
 
-#[cfg(target_os = "unix")]
+#[cfg(target_os = "linux")]
 const EXTENSION: &'static str = "so";
 
 const DESCRIPTION_LABEL: &'static [u8] = b"WS_PLUGIN_DESCRIPTION\0";
