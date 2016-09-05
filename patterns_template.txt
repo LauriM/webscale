@@ -1,2 +1,0 @@
-!stats|http://url.to/some/stats
-some pattern|reply to the pattern

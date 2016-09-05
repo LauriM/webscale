@@ -1,0 +1,15 @@
+[core]
+retries = 5
+plugins = "config/plugins"
+
+[[servers]]
+name = "freenode"
+hostname = "irc.freenode.net"
+port = 6697
+nickname = "werbscael"
+ssl = true
+channels = ["#0x"]
+
+[plugins.wiki]
+setting = 500
+whatever = "okay"
