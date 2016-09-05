@@ -12,7 +12,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(filename: &str) -> Result<Config, String> {
+    pub fn load(filename: String) -> Result<Config, String> {
         let mut file = match File::open(filename) {
             Ok(file) => file,
             Err(err) => return Err(err.to_string())
