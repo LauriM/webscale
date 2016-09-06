@@ -1,12 +1,11 @@
-#![feature(custom_derive, plugin)]
-#![plugin(serde_macros)]
-
 #[macro_use]
 extern crate log;
 extern crate toml;
 extern crate semver;
 extern crate serde;
 extern crate libloading as lib;
+#[macro_use] 
+extern crate prettytable;
 extern crate irc;
 extern crate getopts;
 extern crate webscale_plugin;
@@ -16,12 +15,13 @@ mod webscale;
 
 use getopts::Options;
 use std::env;
-use webscale::config::Config;
 use webscale::plugin::Registry;
 use webscale::Session;
 use std::path::Path;
 use std::thread;
 use std::sync::{Arc, Mutex};
+
+include!(concat!(env!("OUT_DIR"), "/serde_types.rs"));
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -42,15 +42,20 @@ fn main() {
     };
 
     let config_path = config_dir.to_string_lossy().into_owned();
-    println!("Loading config from: {:?}", config_path);
+    println!("Loading config from: {}.", config_path);
     let config = match Config::load(config_path) {
         Ok(loaded) => loaded,
         Err(err) => panic!(err.to_string())
     };
 
     // Initialize plugin container.
+    println!("Scanning for plugins in: {}.");
     let path = Path::new(&config.core.plugins);
     let shared_registry = Arc::new(Mutex::new(Registry::new(path)));
+    {
+        let registry = shared_registry.lock().unwrap();
+        println!("{}", *registry);
+    }
 
     let mut sessions = Vec::new();
     for server in config.servers.clone() {

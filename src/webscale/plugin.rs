@@ -4,7 +4,10 @@ use std::path::Path;
 use glob::glob;
 use semver::Version;
 use lib::{Library, Symbol};
-use webscale::config::Config;
+use prettytable::Table;
+use prettytable::row::Row;
+use prettytable::cell::Cell;
+use std::fmt;
 use webscale_plugin::{Plugin, PluginConfig, PluginDescription};
 
 #[cfg(target_os = "windows")]
@@ -18,8 +21,8 @@ const EXTENSION: &'static str = "so";
 
 const DESCRIPTION_LABEL: &'static [u8] = b"WS_PLUGIN_DESCRIPTION\0";
 
-type PluginStatus = Result<Handle, String>;
-type Initializer = unsafe extern fn(&PluginConfig) -> Box<Plugin>;
+pub type PluginStatus = Result<Handle, String>;
+pub type Initializer = unsafe extern fn(&PluginConfig) -> Box<Plugin>;
 
 pub struct Registry {
     index: HashMap<String, PluginStatus>,
@@ -106,6 +109,27 @@ impl Registry {
     pub fn iter<'a>(&'a self) -> RegistryIterator {
         RegistryIterator::new(self)
     }
+
+    pub fn get_plugin(&self, name: &str) -> Option<&Box<Plugin>> {
+        let path = match self.lookup.get(name) {
+            Some(path) => path,
+            None => return None
+        };
+
+        self.get_plugin_from(path)
+    }
+
+    pub fn get_plugin_from(&self, path: &str) -> Option<&Box<Plugin>> {
+        let handle = match self.index.get(path) {
+            Some(handle) => handle,
+            None => return None
+        };
+
+        match handle {
+            &Ok(ref handle) => Some(&handle.plugin),
+            &Err(_) => None
+        }
+    }
 }
 
 pub struct RegistryIterator<'a> {
@@ -123,6 +147,32 @@ impl <'a> Iterator for RegistryIterator<'a> {
 
     fn next(&mut self) -> Option<&'a PluginStatus> {
         self.iter.next()
+    }
+}
+
+impl fmt::Display for Registry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut table = table!(["Name", "Path", "Status"]);
+        for path in self.index.keys() {
+            let name = match self.lookup.get(path) {
+                Some(name) => name,
+                None => ""
+            };
+
+            // Fairly safe given we're iterating over keys.
+            let handle = self.index.get(path).unwrap();
+            if let &Ok(ref handle) = handle {
+                table.add_row(Row::new(vec![
+                    Cell::new(name), Cell::new(path), Cell::new("LOADED")
+                ]));
+            } else {
+                table.add_row(Row::new(vec![
+                    Cell::new(name), Cell::new(path), Cell::new("ERROR")
+                ]));
+            }
+        }
+
+        table.fmt(f)
     }
 }
 

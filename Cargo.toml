@@ -2,6 +2,10 @@
 name = "webscale"
 version = "0.9.4"
 authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>", "David Kushner <root@davidkushner.me>"]
+build = "build.rs"
+
+[build-dependencies]
+serde_codegen = "0.8"
 
 [dependencies]
 webscale_plugin = { path = "webscale_plugin", version = "0.1.0" }
@@ -9,8 +13,8 @@ toml = { version = "0.2", default-features = false, features = [ "serde" ] }
 log = "0.3.6"
 glob = "*"
 irc = "0.11.4"
-serde = "0.8.4"
-serde_macros = "0.8"
+serde = "0.8"
 semver = "0.4.0"
 libloading = "0.3"
 getopts = "0.2"
+prettytable-rs = "^0.6"

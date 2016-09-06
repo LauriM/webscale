@@ -4,9 +4,9 @@ pub mod plugin;
 use irc::client::prelude::*;
 use std::default::Default;
 use webscale::plugin::Registry;
-use webscale::config::ServerConfig;
 use std::sync::{Arc, Mutex};
 use webscale_plugin::Link;
+use ServerConfig;
 
 pub struct Session { 
     server: IrcServer
