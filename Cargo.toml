@@ -2,6 +2,10 @@
 name = "webscale"
 version = "0.9.4"
 authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>"]
+exclude = [
+  "**/*.json",
+  "**/*.txt"
+]
 
 [dependencies]
 irc = "0.11.3"
