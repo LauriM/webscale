@@ -7,7 +7,7 @@ pub struct Config {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct CoreConfig {
-    pub retries: i32,
+    pub watch: bool,
     pub plugins: String
 }
 
