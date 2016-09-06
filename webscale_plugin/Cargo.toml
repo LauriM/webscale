@@ -2,5 +2,7 @@
 name = "webscale_plugin"
 version = "0.1.0"
 authors = ["David Kushner <david.kushner@bhnetwork.com>"]
+description = "Minimal plugin development API for the webscale IRC bot framework."
+license = "MIT"
 
 [dependencies]
