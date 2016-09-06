@@ -1,7 +1,9 @@
 [package]
 name = "webscale"
 version = "0.9.4"
+description = "Extensible IRC bot framework."
 authors = ["Lauri Mäkinen <lauri.sakari.makinen@gmail.com>"]
+license = "MIT"
 exclude = [
   "**/*.json",
   "**/*.txt",
