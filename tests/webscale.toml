@@ -1,6 +1,6 @@
 [core]
 retries = 5
-plugins = "config/plugins"
+plugins = "tests/"
 
 [[servers]]
 name = "freenode"

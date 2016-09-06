@@ -5,3 +5,6 @@ webscale.json
 patterns.txt
 
 config/plugins/
+*.dylib
+*.dll
+*.so
