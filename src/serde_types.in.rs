@@ -1,17 +1,17 @@
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub core: CoreConfig,
     pub servers: Vec<ServerConfig>,
-    pub plugins: toml::Table
+    pub plugins: toml::Value
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 pub struct CoreConfig {
     pub watch: bool,
     pub plugins: String
 }
 
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ServerConfig {
     pub name: String,
     pub nickname: String,

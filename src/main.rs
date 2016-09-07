@@ -49,14 +49,15 @@ fn main() {
     };
 
     // Initialize plugin container.
-    println!("Scanning for plugins in: {}.");
     let path = Path::new(&config.core.plugins);
-    let shared_registry = Arc::new(Mutex::new(Registry::new(path)));
+    println!("Scanning for plugins in: {}.", config.core.plugins);
+    let shared_registry = Arc::new(Mutex::new(Registry::new(path, &config.plugins)));
     {
         let registry = shared_registry.lock().unwrap();
         println!("{}", *registry);
     }
 
+    // Start requested server sessions.
     let mut sessions = Vec::new();
     for server in config.servers.clone() {
         let registry = shared_registry.clone();

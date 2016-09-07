@@ -11,7 +11,8 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 macro_rules! export_plugin (
     ($x: expr, $c: ident) => ( 
         #[no_mangle]
-        pub fn initialize_plugin(config: &PluginConfig) -> Box<Plugin> { 
+        pub fn initialize_plugin(config: &ConfigSource) -> Box<Plugin> { 
+            let _ = config.get_str_slice("whatever");
             Box::new($c { }) 
         }
 
@@ -23,8 +24,6 @@ macro_rules! export_plugin (
         };
     )
 );
-
-pub type PluginConfig = BTreeMap<String, String>;
 
 pub trait Plugin: Send {
     fn on_connect(&self, &Link);
@@ -50,4 +49,15 @@ pub struct User {
 
 pub trait Link {
     fn send(&self, target: &str, message: &str);
+}
+
+pub trait ConfigSource {
+    fn get_str(&self, path: &str) -> Option<&str>;
+    fn get_int(&self, path: &str) -> Option<i64>;
+    fn get_float(&self, path: &str) -> Option<f64>;
+    fn get_bool(&self, path: &str) -> Option<bool>;
+    fn get_str_slice(&self, path: &str) -> Option<&[&str]>;
+    fn get_int_slice(&self, path: &str) -> Option<&[i64]>;
+    fn get_float_slice(&self, path: &str) -> Option<&[f64]>;
+    fn get_bool_slice(&self, path: &str) -> Option<&[bool]>;
 }

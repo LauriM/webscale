@@ -1,14 +1,14 @@
-use std::collections::{HashMap, BTreeMap};
+use std::collections::HashMap;
 use std::collections::hash_map;
 use std::path::Path;
 use glob::glob;
 use semver::Version;
 use lib::{Library, Symbol};
-use prettytable::Table;
+use toml;
 use prettytable::row::Row;
 use prettytable::cell::Cell;
 use std::fmt;
-use webscale_plugin::{Plugin, PluginConfig, PluginDescription};
+use webscale_plugin::{Plugin, ConfigSource, PluginDescription};
 
 #[cfg(target_os = "windows")]
 const EXTENSION: &'static str = "dll";
@@ -22,7 +22,7 @@ const EXTENSION: &'static str = "so";
 const DESCRIPTION_LABEL: &'static [u8] = b"WS_PLUGIN_DESCRIPTION\0";
 
 pub type PluginStatus = Result<Handle, String>;
-pub type Initializer = unsafe extern fn(&PluginConfig) -> Box<Plugin>;
+pub type Initializer = unsafe extern fn(Box<ConfigSource>) -> Box<Plugin>;
 
 pub struct Registry {
     index: HashMap<String, PluginStatus>,
@@ -30,7 +30,7 @@ pub struct Registry {
 }
 
 impl Registry {
-    pub fn new(path: &Path) -> Self {
+    pub fn new(path: &Path, config: &toml::Value) -> Self {
         let mut index = HashMap::new();
         let mut lookup = HashMap::new();
 
@@ -50,7 +50,7 @@ impl Registry {
             let raw_path = resolved.to_str().unwrap();
             println!("Loading plugin from {}.", raw_path);
 
-            let status = Self::load(raw_path);
+            let status = Self::load(raw_path, config);
             if let Ok(handle) = status {
                 lookup.insert(String::from(raw_path), handle.name.clone());
                 index.insert(String::from(raw_path), Ok(handle));
@@ -62,7 +62,7 @@ impl Registry {
         Registry { lookup: lookup, index: index }
     }
 
-    fn load(path: &str) -> PluginStatus {
+    fn load(path: &str, config: &toml::Value) -> PluginStatus {
         let lib = match Library::new(path) {
             Ok(loaded) => loaded,
             Err(err) => return Err(err.to_string())
@@ -91,8 +91,13 @@ impl Registry {
 
             let name = String::from((**description).name);
             let version = Version::parse((**description).version).unwrap();
-            let initializer = initializer;
-            let plugin = initializer(&BTreeMap::new()) as Box<Plugin>;
+
+            let config = match config.lookup(&(String::from("plugins.") + &name)) {
+                Some(value) => PluginConfig::new(value.clone()),
+                None => PluginConfig::new(toml::Value::Table(toml::Table::new()))
+            };
+            let config = Box::new(config) as Box<ConfigSource>;
+            let plugin = initializer(config) as Box<Plugin>;
             
             (name, version, plugin)
         };
@@ -173,6 +178,69 @@ impl fmt::Display for Registry {
         }
 
         table.fmt(f)
+    }
+}
+
+struct PluginConfig {
+    root: toml::Value
+}
+
+impl PluginConfig {
+    pub fn new(root: toml::Value) -> Self {
+        PluginConfig { root: root }
+    }
+}
+
+impl ConfigSource for PluginConfig {
+    fn get_str(&self, path: &str) -> Option<&str> {
+        match self.root.lookup(path) {
+            Some(value) => value.as_str(),
+            None => None
+        }
+    }
+
+    fn get_int(&self, path: &str) -> Option<i64> {
+        match self.root.lookup(path) {
+            Some(value) => value.as_integer(),
+            None => None
+        }
+    }
+
+    fn get_float(&self, path: &str) -> Option<f64> {
+        match self.root.lookup(path) {
+            Some(value) => value.as_float(),
+            None => None
+        }
+    }
+
+    fn get_bool(&self, path: &str) -> Option<bool> {
+        match self.root.lookup(path) {
+            Some(value) => value.as_bool(),
+            None => None
+        }
+    }
+
+    fn get_str_slice(&self, path: &str) -> Option<&[&str]> {
+        let slice = match self.root.lookup(path) {
+            Some(value) => value.as_slice(),
+            None => return None
+        };
+
+        println!("{:?}", slice);
+
+        None
+    }
+
+    fn get_int_slice(&self, path: &str) -> Option<&[i64]> {
+        None
+    }
+
+    fn get_float_slice(&self, path: &str) -> Option<&[f64]> {
+        None
+    }
+
+    fn get_bool_slice(&self, path: &str) -> Option<&[bool]> {
+        None
     }
 }
 

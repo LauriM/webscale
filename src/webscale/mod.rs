@@ -47,10 +47,21 @@ impl Session {
         // registered plugins.
         for message in self.server.iter() {
             let message = message.unwrap();
+            let registry = registry.lock().unwrap();
+
+            // Handle system-level queries.
+            if let Command::PRIVMSG(ref target, ref content) = message.command {
+                match content.as_str() {
+                    "!status" => {
+                        for row in registry.to_string().split("\n") {
+                            self.send(target, row);
+                        }
+                    }
+                    _ => ()
+                };
+            }
 
             println!("{:?}", message);
-
-            let registry = registry.lock().unwrap();
             for status in registry.iter() {
                 if let &Ok(ref handle) = status {
                     match message.command {
